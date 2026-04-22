@@ -1,7 +1,10 @@
 import CategoryBadge from '@/components/ui/category-badge';
+import { useThemedStyles } from '@/theme/theme-context';
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
+// Shape of what the card actually draws. Pre-computed by the parent screen so
+// the card doesn't have to do any calculations itself.
 export type HabitCardModel = {
   id: number;
   name: string;
@@ -10,7 +13,9 @@ export type HabitCardModel = {
   unit: string | null;
   categoryName: string;
   categoryColor: string;
-  weeklyTotal: number;
+  rangeTotal: number;
+  rangeLabel: string;
+  streak: number;
 };
 
 type Props = {
@@ -20,11 +25,88 @@ type Props = {
 
 export default function HabitCard({ habit, onQuickLog }: Props) {
   const router = useRouter();
+  const styles = useThemedStyles((c) => ({
+    card: {
+      backgroundColor: c.surface,
+      borderColor: c.border,
+      borderRadius: 4,
+      borderWidth: 1,
+      marginBottom: 10,
+      padding: 14,
+    },
+    cardPressed: {
+      opacity: 0.88,
+    },
+    top: {
+      alignItems: 'center' as const,
+      flexDirection: 'row' as const,
+      justifyContent: 'space-between' as const,
+    },
+    name: {
+      color: c.text,
+      flex: 1,
+      fontSize: 17,
+      fontWeight: '700' as const,
+      marginRight: 12,
+    },
+    description: {
+      color: c.textMuted,
+      fontSize: 13,
+      marginTop: 6,
+    },
+    row: {
+      alignItems: 'center' as const,
+      flexDirection: 'row' as const,
+      flexWrap: 'wrap' as const,
+      gap: 8,
+      justifyContent: 'space-between' as const,
+      marginTop: 10,
+    },
+    metaGroup: {
+      alignItems: 'center' as const,
+      flexDirection: 'row' as const,
+      gap: 6,
+    },
+    meta: {
+      color: c.textMuted,
+      fontSize: 12,
+      fontWeight: '600' as const,
+    },
+    metaDivider: {
+      color: c.textPlaceholder,
+      fontSize: 12,
+    },
+    streak: {
+      color: c.primaryDark,
+      fontSize: 12,
+      fontWeight: '800' as const,
+    },
+    logBtn: {
+      backgroundColor: c.primary,
+      borderColor: c.primaryDark,
+      borderRadius: 4,
+      borderWidth: 1,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+    },
+    logBtnPressed: {
+      opacity: 0.85,
+    },
+    logBtnLabel: {
+      color: c.onPrimary,
+      fontSize: 13,
+      fontWeight: '700' as const,
+    },
+  }));
+
+  // Navigate to the details screen when the card is tapped.
   const openDetails = () =>
     router.push({ pathname: '/habit/[id]', params: { id: String(habit.id) } });
 
+  // Pick a sensible unit label — "min" for durations, "times" otherwise.
   const unit = habit.unit ?? (habit.metricType === 'duration' ? 'min' : 'times');
-  const summary = `${habit.name}, category ${habit.categoryName}, ${habit.weeklyTotal} ${unit} this week`;
+  // Full accessibility summary so screen readers get the whole context at once.
+  const summary = `${habit.name}, category ${habit.categoryName}, ${habit.rangeTotal} ${unit} in ${habit.rangeLabel}, streak ${habit.streak}`;
 
   return (
     <Pressable
@@ -33,11 +115,13 @@ export default function HabitCard({ habit, onQuickLog }: Props) {
       onPress={openDetails}
       style={({ pressed }) => [styles.card, pressed ? styles.cardPressed : null]}
     >
+      {/* Top row: habit name plus the small quick-log button on the right. */}
       <View style={styles.top}>
         <Text style={styles.name}>{habit.name}</Text>
         <Pressable
           accessibilityLabel={`Quick log ${habit.name}`}
           accessibilityRole="button"
+          // Quick log fires without opening the full form — saves a couple of taps.
           onPress={() => onQuickLog(habit.id)}
           style={({ pressed }) => [styles.logBtn, pressed ? styles.logBtnPressed : null]}
         >
@@ -45,76 +129,24 @@ export default function HabitCard({ habit, onQuickLog }: Props) {
         </Pressable>
       </View>
 
+      {/* Description is optional — don't bother rendering an empty line. */}
       {habit.description ? (
         <Text style={styles.description}>{habit.description}</Text>
       ) : null}
 
+      {/* Bottom row shows category badge plus the running total and streak. */}
       <View style={styles.row}>
         <CategoryBadge name={habit.categoryName} color={habit.categoryColor} />
-        <Text style={styles.meta}>
-          {habit.weeklyTotal} {unit} / week
-        </Text>
+        <View style={styles.metaGroup}>
+          <Text style={styles.meta}>
+            {Math.round(habit.rangeTotal)} {unit}
+          </Text>
+          <Text style={styles.metaDivider}>•</Text>
+          <Text style={styles.streak}>
+            {habit.streak} day{habit.streak === 1 ? '' : 's'} streak
+          </Text>
+        </View>
       </View>
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#E5E7EB',
-    borderRadius: 4,
-    borderWidth: 1,
-    marginBottom: 10,
-    padding: 14,
-  },
-  cardPressed: {
-    opacity: 0.88,
-  },
-  top: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  name: {
-    color: '#111827',
-    flex: 1,
-    fontSize: 17,
-    fontWeight: '700',
-    marginRight: 12,
-  },
-  description: {
-    color: '#4B5563',
-    fontSize: 13,
-    marginTop: 6,
-  },
-  row: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
-  meta: {
-    color: '#4B5563',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  logBtn: {
-    backgroundColor: '#FACC15',
-    borderColor: '#EAB308',
-    borderRadius: 4,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  logBtnPressed: {
-    opacity: 0.85,
-  },
-  logBtnLabel: {
-    color: '#111827',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-});

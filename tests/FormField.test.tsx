@@ -1,5 +1,15 @@
 import { fireEvent, render } from '@testing-library/react-native';
 import React from 'react';
+
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  __esModule: true,
+  default: {
+    getItem: jest.fn(() => Promise.resolve(null)),
+    setItem: jest.fn(() => Promise.resolve()),
+    removeItem: jest.fn(() => Promise.resolve()),
+  },
+}));
+
 import FormField from '@/components/ui/form-field';
 
 describe('FormField', () => {

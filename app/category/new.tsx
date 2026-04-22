@@ -5,16 +5,62 @@ import { useAuth } from '@/auth/auth-context';
 import { CategoryPalette } from '@/constants/theme';
 import { db } from '@/db/client';
 import { categories as categoriesTable } from '@/db/schema';
+import { useThemedStyles } from '@/theme/theme-context';
 import { useRouter } from 'expo-router';
 import { useContext, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DataContext } from '../_layout';
 
+// Creates a new category. The user gets a name field plus a colour picker
+// from the preset palette so the app keeps a consistent look.
 export default function NewCategory() {
   const router = useRouter();
   const { user } = useAuth();
   const context = useContext(DataContext);
+  const styles = useThemedStyles((c) => ({
+    safeArea: {
+      backgroundColor: c.background,
+      flex: 1,
+      padding: 20,
+    },
+    content: {
+      paddingBottom: 24,
+    },
+    form: {
+      marginBottom: 6,
+    },
+    label: {
+      color: c.textStrong,
+      fontSize: 13,
+      fontWeight: '600' as const,
+      marginBottom: 6,
+    },
+    swatches: {
+      flexDirection: 'row' as const,
+      flexWrap: 'wrap' as const,
+      gap: 10,
+      marginBottom: 12,
+    },
+    swatch: {
+      borderColor: 'transparent',
+      borderRadius: 4,
+      borderWidth: 2,
+      height: 36,
+      width: 36,
+    },
+    swatchSelected: {
+      borderColor: c.text,
+    },
+    error: {
+      color: c.danger,
+      fontSize: 13,
+      marginBottom: 10,
+    },
+    spacer: {
+      marginTop: 10,
+    },
+  }));
 
   const [name, setName] = useState('');
   const [color, setColor] = useState<string>(CategoryPalette[0]);
@@ -25,6 +71,7 @@ export default function NewCategory() {
 
   const { setCategories } = context;
 
+  // Save the category, add it to state, then navigate back to the list.
   const save = async () => {
     setError(null);
 
@@ -35,6 +82,7 @@ export default function NewCategory() {
 
     setSaving(true);
     try {
+      // Icon is hardcoded for now — we're keeping things simple with colour only.
       const [row] = await db
         .insert(categoriesTable)
         .values({ userId: user.id, name: name.trim(), color, icon: 'star' })
@@ -90,47 +138,3 @@ export default function NewCategory() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: '#FFFFFF',
-    flex: 1,
-    padding: 20,
-  },
-  content: {
-    paddingBottom: 24,
-  },
-  form: {
-    marginBottom: 6,
-  },
-  label: {
-    color: '#334155',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  swatches: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 12,
-  },
-  swatch: {
-    borderColor: 'transparent',
-    borderRadius: 4,
-    borderWidth: 2,
-    height: 36,
-    width: 36,
-  },
-  swatchSelected: {
-    borderColor: '#111827',
-  },
-  error: {
-    color: '#EF4444',
-    fontSize: 13,
-    marginBottom: 10,
-  },
-  spacer: {
-    marginTop: 10,
-  },
-});

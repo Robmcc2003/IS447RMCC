@@ -1,12 +1,40 @@
 import { Tabs } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
+import { useTheme, useThemedStyles } from '@/theme/theme-context';
 
+// Minimal data for each tab's small icon badge.
 type IconProps = {
   letter: string;
   focused: boolean;
 };
 
+// Skipping an icon library — just a single letter inside a square block.
+// Simple, and keeps the app feeling consistent across both themes.
 function TabIcon({ letter, focused }: IconProps) {
+  const styles = useThemedStyles((c) => ({
+    icon: {
+      alignItems: 'center' as const,
+      borderColor: c.borderStrong,
+      borderRadius: 4,
+      borderWidth: 1,
+      height: 24,
+      justifyContent: 'center' as const,
+      width: 24,
+    },
+    iconFocused: {
+      backgroundColor: c.tabActiveBackground,
+      borderColor: c.primaryDark,
+    },
+    iconLabel: {
+      color: c.tabInactiveText,
+      fontSize: 12,
+      fontWeight: '800' as const,
+    },
+    iconLabelFocused: {
+      color: c.tabActiveText,
+    },
+  }));
+
   return (
     <View style={[styles.icon, focused ? styles.iconFocused : null]}>
       <Text style={[styles.iconLabel, focused ? styles.iconLabelFocused : null]}>{letter}</Text>
@@ -14,14 +42,27 @@ function TabIcon({ letter, focused }: IconProps) {
   );
 }
 
+// Bottom tab bar for the signed-in experience. Pulls all its colours from
+// the current theme so dark mode applies cleanly across the whole bar.
 export default function TabLayout() {
+  const { colors } = useTheme();
+
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#111827',
-        tabBarInactiveTintColor: '#9CA3AF',
-        tabBarStyle: styles.tabBar,
-        tabBarLabelStyle: styles.tabLabel,
+        // Paint the bar itself with the theme's tab colours.
+        tabBarActiveTintColor: colors.text,
+        tabBarInactiveTintColor: colors.tabInactiveText,
+        tabBarStyle: {
+          backgroundColor: colors.tabBarBackground,
+          borderTopColor: colors.tabBarBorder,
+          borderTopWidth: 1,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '700',
+          letterSpacing: 0.5,
+        },
         headerShown: false,
       }}
     >
@@ -56,37 +97,3 @@ export default function TabLayout() {
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: '#FFFFFF',
-    borderTopColor: '#E5E7EB',
-    borderTopWidth: 1,
-  },
-  tabLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  icon: {
-    alignItems: 'center',
-    borderColor: '#9CA3AF',
-    borderRadius: 4,
-    borderWidth: 1,
-    height: 24,
-    justifyContent: 'center',
-    width: 24,
-  },
-  iconFocused: {
-    backgroundColor: '#FACC15',
-    borderColor: '#EAB308',
-  },
-  iconLabel: {
-    color: '#9CA3AF',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  iconLabelFocused: {
-    color: '#111827',
-  },
-});

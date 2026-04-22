@@ -1,5 +1,8 @@
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Text, TextInput, View } from 'react-native';
+import { useTheme, useThemedStyles } from '@/theme/theme-context';
 
+// Everything a FormField needs to know. Most values are optional so you can
+// pass just a label and value for a basic single-line input.
 type Props = {
   label: string;
   value: string;
@@ -12,6 +15,8 @@ type Props = {
   error?: string;
 };
 
+// Reusable input with a label on top. Flips colours automatically when the
+// theme changes — no extra effort from the caller.
 export default function FormField({
   label,
   value,
@@ -23,8 +28,42 @@ export default function FormField({
   multiline,
   error,
 }: Props) {
+  // Need the raw colours too so we can set the placeholder tint directly.
+  const { colors } = useTheme();
+  const styles = useThemedStyles((c) => ({
+    wrapper: {
+      marginBottom: 12,
+    },
+    label: {
+      color: c.textStrong,
+      fontSize: 13,
+      fontWeight: '600' as const,
+      marginBottom: 6,
+    },
+    input: {
+      backgroundColor: c.inputBackground,
+      borderColor: c.inputBorder,
+      borderRadius: 4,
+      borderWidth: 1,
+      color: c.text,
+      fontSize: 15,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    inputMultiline: {
+      minHeight: 80,
+      textAlignVertical: 'top' as const,
+    },
+    error: {
+      color: c.danger,
+      fontSize: 12,
+      marginTop: 4,
+    },
+  }));
+
   return (
     <View style={styles.wrapper}>
+      {/* Label sits on top so screen readers announce it as the field name. */}
       <Text style={styles.label}>{label}</Text>
       <TextInput
         accessibilityLabel={label}
@@ -33,43 +72,13 @@ export default function FormField({
         multiline={multiline}
         onChangeText={onChangeText}
         placeholder={placeholder ?? label}
-        placeholderTextColor="#9CA3AF"
+        placeholderTextColor={colors.textPlaceholder}
         secureTextEntry={secureTextEntry}
         style={[styles.input, multiline ? styles.inputMultiline : null]}
         value={value}
       />
+      {/* Only show the error bit if we've actually got one to flag up. */}
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrapper: {
-    marginBottom: 12,
-  },
-  label: {
-    color: '#334155',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#CBD5E1',
-    borderRadius: 4,
-    borderWidth: 1,
-    color: '#111827',
-    fontSize: 15,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  inputMultiline: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  error: {
-    color: '#EF4444',
-    fontSize: 12,
-    marginTop: 4,
-  },
-});

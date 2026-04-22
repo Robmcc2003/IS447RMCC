@@ -93,6 +93,16 @@ Suites:
 - `tests/FormField.test.tsx` — renders the label/placeholder, fires `onChangeText`, and renders error messages.
 - `tests/HabitsList.test.tsx` — integration: supplies seeded data via `DataContext` and asserts habit names render.
 
+## Reflection (framework & library choices)
+
+- **Expo + React Native** was chosen over a bare React Native install because it ships a well-integrated toolchain: file-based routing (`expo-router`), native-module management, OTA updates, and a single QR/dev client across iOS, Android and web. That removes the CocoaPods / Gradle setup burden while still allowing a native build with `eas build` if native modules are ever needed.
+- **expo-router** was preferred over React Navigation's JS-only config because routes are just files on disk (`app/habit/[id]/edit.tsx`), which maps cleanly onto the assignment's CRUD surface and makes deep-linking "free". The typed routes feature also catches bad `router.push` calls at compile time.
+- **Drizzle ORM (SQLite)** was chosen over raw `expo-sqlite` calls or `@nozbe/watermelondb`. Drizzle gives strongly-typed schemas (`db/schema.ts`) and query builders (`db.select().from(habits).where(eq(...))`) without the runtime cost of a heavier ORM like TypeORM, and unlike watermelondb it doesn't impose its own reactive store — it plays well with the React Context + `useState` approach used in `app/_layout.tsx`.
+- **Local-only persistence** (no Firebase/Supabase) was a deliberate choice: the assignment emphasises data privacy and offline-first behaviour. Passwords are hashed with SHA-256 + a fixed salt via `expo-crypto`, and sessions are stored in `AsyncStorage`. This keeps everything on-device, which is exactly the threat-model the requirements ask for.
+- **react-native-chart-kit** was preferred over Victory Native / Recharts. It's pure-JS with an SVG renderer (no extra native modules), which matters for Expo Go compatibility. A single bar chart is enough to visualise aggregated category totals.
+- **State management**: plain React Context + `useState` + Drizzle queries, not Redux/Zustand. The app's state is small (< 10 collections) and fits neatly into two contexts (`AuthContext`, `DataContext`), which keeps the code close to the lab sample's pattern and avoids the overhead of a store library.
+- **Testing**: Jest with `jest-expo` preset, plus `@testing-library/react-native`. Unit and component tests run synchronously; the integration test mocks `@/db/client` rather than pulling in `better-sqlite3`, which keeps the test run fast and avoids native-module drift between Jest and the Expo runtime.
+
 ## Notes on coding style
 
 Matches the lab sample (`react-native-lab`):

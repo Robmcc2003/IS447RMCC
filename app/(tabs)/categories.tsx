@@ -3,22 +3,75 @@ import PrimaryButton from '@/components/ui/primary-button';
 import ScreenHeader from '@/components/ui/screen-header';
 import { db } from '@/db/client';
 import { categories as categoriesTable } from '@/db/schema';
+import { useThemedStyles } from '@/theme/theme-context';
 import { eq } from 'drizzle-orm';
 import { useRouter } from 'expo-router';
 import { useContext } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Category, DataContext, Habit } from '../_layout';
 
+// Lists every category, lets the user tap one to edit it or long-press to
+// delete it (provided there aren't any habits still hanging off it).
 export default function CategoriesScreen() {
   const router = useRouter();
   const context = useContext(DataContext);
+  const styles = useThemedStyles((c) => ({
+    safeArea: {
+      backgroundColor: c.background,
+      flex: 1,
+      paddingHorizontal: 18,
+      paddingTop: 10,
+    },
+    listContent: {
+      paddingBottom: 24,
+      paddingTop: 14,
+    },
+    row: {
+      alignItems: 'center' as const,
+      backgroundColor: c.surface,
+      borderColor: c.border,
+      borderRadius: 4,
+      borderWidth: 1,
+      flexDirection: 'row' as const,
+      marginBottom: 8,
+      padding: 12,
+    },
+    rowPressed: {
+      opacity: 0.85,
+    },
+    swatch: {
+      borderRadius: 4,
+      height: 28,
+      marginRight: 12,
+      width: 28,
+    },
+    rowBody: {
+      flex: 1,
+    },
+    name: {
+      color: c.text,
+      fontSize: 16,
+      fontWeight: '700' as const,
+    },
+    meta: {
+      color: c.textSubtle,
+      fontSize: 12,
+      marginTop: 2,
+    },
+    chevron: {
+      color: c.textPlaceholder,
+      fontSize: 22,
+    },
+  }));
 
   if (!context) return null;
 
   const { categories, habits, setCategories } = context;
 
+  // Delete a category — but only if nothing still relies on it.
   const deleteCategory = async (category: Category) => {
+    // Refuse if habits are still attached — we don't want orphan records.
     const inUse = habits.some((h: Habit) => h.categoryId === category.id);
 
     if (inUse) {
@@ -29,6 +82,7 @@ export default function CategoriesScreen() {
       return;
     }
 
+    // Belt-and-braces confirmation before the actual delete.
     Alert.alert('Delete category', `Delete "${category.name}"?`, [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -90,52 +144,3 @@ export default function CategoriesScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: '#FFFFFF',
-    flex: 1,
-    paddingHorizontal: 18,
-    paddingTop: 10,
-  },
-  listContent: {
-    paddingBottom: 24,
-    paddingTop: 14,
-  },
-  row: {
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderColor: '#E5E7EB',
-    borderRadius: 4,
-    borderWidth: 1,
-    flexDirection: 'row',
-    marginBottom: 8,
-    padding: 12,
-  },
-  rowPressed: {
-    opacity: 0.85,
-  },
-  swatch: {
-    borderRadius: 4,
-    height: 28,
-    marginRight: 12,
-    width: 28,
-  },
-  rowBody: {
-    flex: 1,
-  },
-  name: {
-    color: '#111827',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  meta: {
-    color: '#6B7280',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  chevron: {
-    color: '#9CA3AF',
-    fontSize: 22,
-  },
-});

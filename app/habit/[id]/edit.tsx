@@ -3,17 +3,78 @@ import PrimaryButton from '@/components/ui/primary-button';
 import ScreenHeader from '@/components/ui/screen-header';
 import { db } from '@/db/client';
 import { habits as habitsTable } from '@/db/schema';
+import { useThemedStyles } from '@/theme/theme-context';
 import { eq } from 'drizzle-orm';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useContext, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Category, DataContext, Habit } from '../../_layout';
 
+// Edit an existing habit. Pulls the row out of context, prefills the form,
+// then writes back via Drizzle when the user hits save.
 export default function EditHabit() {
+  // `id` comes in via the URL — cast to number when we actually use it.
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const context = useContext(DataContext);
+  const styles = useThemedStyles((c) => ({
+    safeArea: {
+      backgroundColor: c.background,
+      flex: 1,
+      padding: 20,
+    },
+    content: {
+      paddingBottom: 24,
+    },
+    form: {
+      marginBottom: 6,
+    },
+    label: {
+      color: c.textStrong,
+      fontSize: 13,
+      fontWeight: '600' as const,
+      marginBottom: 6,
+    },
+    chipRow: {
+      flexDirection: 'row' as const,
+      flexWrap: 'wrap' as const,
+      gap: 8,
+      marginBottom: 12,
+    },
+    chip: {
+      alignItems: 'center' as const,
+      backgroundColor: c.surface,
+      borderColor: c.borderStrong,
+      borderRadius: 4,
+      borderWidth: 1,
+      flexDirection: 'row' as const,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+    },
+    chipSelected: {
+      backgroundColor: c.primary,
+      borderColor: c.primaryDark,
+    },
+    dot: {
+      borderRadius: 4,
+      height: 10,
+      marginRight: 6,
+      width: 10,
+    },
+    chipText: {
+      color: c.text,
+      fontSize: 13,
+      fontWeight: '600' as const,
+    },
+    chipTextSelected: {
+      color: c.onPrimary,
+      fontWeight: '800' as const,
+    },
+    spacer: {
+      marginTop: 10,
+    },
+  }));
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -21,8 +82,11 @@ export default function EditHabit() {
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Find the habit we're editing — might be undefined if someone deep-linked
+  // to an invalid id.
   const habit = context?.habits.find((h: Habit) => h.id === Number(id));
 
+  // Prefill the form once the habit's in memory.
   useEffect(() => {
     if (!habit) return;
     setName(habit.name);
@@ -118,60 +182,3 @@ export default function EditHabit() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: '#FFFFFF',
-    flex: 1,
-    padding: 20,
-  },
-  content: {
-    paddingBottom: 24,
-  },
-  form: {
-    marginBottom: 6,
-  },
-  label: {
-    color: '#334155',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
-  },
-  chip: {
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderColor: '#9CA3AF',
-    borderRadius: 4,
-    borderWidth: 1,
-    flexDirection: 'row',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  chipSelected: {
-    backgroundColor: '#FACC15',
-    borderColor: '#EAB308',
-  },
-  dot: {
-    borderRadius: 4,
-    height: 10,
-    marginRight: 6,
-    width: 10,
-  },
-  chipText: {
-    color: '#111827',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  chipTextSelected: {
-    fontWeight: '800',
-  },
-  spacer: {
-    marginTop: 10,
-  },
-});

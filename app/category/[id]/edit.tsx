@@ -4,24 +4,67 @@ import ScreenHeader from '@/components/ui/screen-header';
 import { CategoryPalette } from '@/constants/theme';
 import { db } from '@/db/client';
 import { categories as categoriesTable } from '@/db/schema';
+import { useThemedStyles } from '@/theme/theme-context';
 import { eq } from 'drizzle-orm';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useContext, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Category, DataContext } from '../../_layout';
 
+// Edit the name and colour of an existing category. Same colour palette
+// as "new" so the look stays consistent.
 export default function EditCategory() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const context = useContext(DataContext);
+  const styles = useThemedStyles((c) => ({
+    safeArea: {
+      backgroundColor: c.background,
+      flex: 1,
+      padding: 20,
+    },
+    content: {
+      paddingBottom: 24,
+    },
+    form: {
+      marginBottom: 6,
+    },
+    label: {
+      color: c.textStrong,
+      fontSize: 13,
+      fontWeight: '600' as const,
+      marginBottom: 6,
+    },
+    swatches: {
+      flexDirection: 'row' as const,
+      flexWrap: 'wrap' as const,
+      gap: 10,
+      marginBottom: 12,
+    },
+    swatch: {
+      borderColor: 'transparent',
+      borderRadius: 4,
+      borderWidth: 2,
+      height: 36,
+      width: 36,
+    },
+    swatchSelected: {
+      borderColor: c.text,
+    },
+    spacer: {
+      marginTop: 10,
+    },
+  }));
 
   const [name, setName] = useState('');
   const [color, setColor] = useState<string>(CategoryPalette[0]);
   const [saving, setSaving] = useState(false);
 
+  // Find the row we're editing. We return null further down if it's missing.
   const category = context?.categories.find((c: Category) => c.id === Number(id));
 
+  // Prefill when the category's loaded.
   useEffect(() => {
     if (!category) return;
     setName(category.name);
@@ -92,42 +135,3 @@ export default function EditCategory() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: '#FFFFFF',
-    flex: 1,
-    padding: 20,
-  },
-  content: {
-    paddingBottom: 24,
-  },
-  form: {
-    marginBottom: 6,
-  },
-  label: {
-    color: '#334155',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  swatches: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 12,
-  },
-  swatch: {
-    borderColor: 'transparent',
-    borderRadius: 4,
-    borderWidth: 2,
-    height: 36,
-    width: 36,
-  },
-  swatchSelected: {
-    borderColor: '#111827',
-  },
-  spacer: {
-    marginTop: 10,
-  },
-});

@@ -4,18 +4,86 @@ import ScreenHeader from '@/components/ui/screen-header';
 import { useAuth } from '@/auth/auth-context';
 import { db } from '@/db/client';
 import { habits as habitsTable } from '@/db/schema';
+import { useThemedStyles } from '@/theme/theme-context';
 import { useRouter } from 'expo-router';
 import { useContext, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Category, DataContext } from '../_layout';
 
+// Either counting occurrences (press-ups, glasses of water) or timing a
+// duration (minutes reading, minutes meditating). Changes the unit placeholder.
 type MetricType = 'count' | 'duration';
 
+// Form for creating a new habit. Name + category are required; everything
+// else is optional and can be tweaked later via edit.
 export default function NewHabit() {
   const router = useRouter();
   const { user } = useAuth();
   const context = useContext(DataContext);
+  const styles = useThemedStyles((c) => ({
+    safeArea: {
+      backgroundColor: c.background,
+      flex: 1,
+      padding: 20,
+    },
+    content: {
+      paddingBottom: 24,
+    },
+    form: {
+      marginBottom: 6,
+    },
+    label: {
+      color: c.textStrong,
+      fontSize: 13,
+      fontWeight: '600' as const,
+      marginBottom: 6,
+      marginTop: 4,
+    },
+    chipRow: {
+      flexDirection: 'row' as const,
+      flexWrap: 'wrap' as const,
+      gap: 8,
+      marginBottom: 12,
+    },
+    chip: {
+      alignItems: 'center' as const,
+      backgroundColor: c.surface,
+      borderColor: c.borderStrong,
+      borderRadius: 4,
+      borderWidth: 1,
+      flexDirection: 'row' as const,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+    },
+    chipSelected: {
+      backgroundColor: c.primary,
+      borderColor: c.primaryDark,
+    },
+    dot: {
+      borderRadius: 4,
+      height: 10,
+      marginRight: 6,
+      width: 10,
+    },
+    chipText: {
+      color: c.text,
+      fontSize: 13,
+      fontWeight: '600' as const,
+    },
+    chipTextSelected: {
+      color: c.onPrimary,
+      fontWeight: '800' as const,
+    },
+    error: {
+      color: c.danger,
+      fontSize: 13,
+      marginBottom: 10,
+    },
+    spacer: {
+      marginTop: 10,
+    },
+  }));
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -29,9 +97,11 @@ export default function NewHabit() {
 
   const { categories, setHabits } = context;
 
+  // Validate, save to SQLite, update the in-memory list, then navigate back.
   const save = async () => {
     setError(null);
 
+    // Basic sanity checks — no point asking the DB to save "a" as a habit name.
     if (name.trim().length < 2) {
       setError('Name must be at least 2 characters.');
       return;
@@ -44,6 +114,7 @@ export default function NewHabit() {
 
     setSaving(true);
     try {
+      // `.returning()` gives us back the full row including the new id.
       const [row] = await db
         .insert(habitsTable)
         .values({
@@ -141,66 +212,3 @@ export default function NewHabit() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: '#FFFFFF',
-    flex: 1,
-    padding: 20,
-  },
-  content: {
-    paddingBottom: 24,
-  },
-  form: {
-    marginBottom: 6,
-  },
-  label: {
-    color: '#334155',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 6,
-    marginTop: 4,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
-  },
-  chip: {
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderColor: '#9CA3AF',
-    borderRadius: 4,
-    borderWidth: 1,
-    flexDirection: 'row',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  chipSelected: {
-    backgroundColor: '#FACC15',
-    borderColor: '#EAB308',
-  },
-  dot: {
-    borderRadius: 4,
-    height: 10,
-    marginRight: 6,
-    width: 10,
-  },
-  chipText: {
-    color: '#111827',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  chipTextSelected: {
-    fontWeight: '800',
-  },
-  error: {
-    color: '#EF4444',
-    fontSize: 13,
-    marginBottom: 10,
-  },
-  spacer: {
-    marginTop: 10,
-  },
-});
