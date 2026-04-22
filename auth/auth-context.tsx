@@ -14,7 +14,7 @@ import { hashPassword, verifyPassword } from './password';
 
 const SESSION_KEY = 'habit-tracker.session.userId';
 
-export type AuthUser = {
+type AuthUser = {
   id: number;
   email: string;
   displayName: string;
@@ -29,7 +29,7 @@ type AuthContextType = {
   deleteAccount: () => Promise<void>;
 };
 
-export const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType | null>(null);
 
 function toAuthUser(row: { id: number; email: string; displayName: string }): AuthUser {
   return { id: row.id, email: row.email, displayName: row.displayName };

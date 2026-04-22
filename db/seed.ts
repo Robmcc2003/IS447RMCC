@@ -8,16 +8,28 @@ export const DEMO_PASSWORD = 'demo1234';
 const DEMO_NAME = 'Demo User';
 
 export async function seedDemoDataIfEmpty() {
+  const passwordHash = await hashPassword(DEMO_PASSWORD);
+
   const existing = await db
     .select()
     .from(users)
     .where(eq(users.email, DEMO_EMAIL));
 
+  // If the demo user already exists we don't want to wipe their data, but we
+  // DO want to make sure the stored password hash is in sync with the current
+  // DEMO_PASSWORD / salt. This guards against stale local DBs from earlier
+  // dev runs where the password or hashing code may have been different —
+  // without it, "Use demo account" fails with "Incorrect password" forever.
   if (existing.length > 0) {
+    if (existing[0].passwordHash !== passwordHash) {
+      await db
+        .update(users)
+        .set({ passwordHash })
+        .where(eq(users.email, DEMO_EMAIL));
+    }
     return;
   }
 
-  const passwordHash = await hashPassword(DEMO_PASSWORD);
   const [demoUser] = await db
     .insert(users)
     .values({

@@ -2,6 +2,7 @@ jest.mock('@/db/client', () => ({
   db: {
     select: jest.fn(),
     insert: jest.fn(),
+    update: jest.fn(),
   },
 }));
 
@@ -12,7 +13,11 @@ jest.mock('@/auth/password', () => ({
 import { db } from '@/db/client';
 import { seedDemoDataIfEmpty } from '@/db/seed';
 
-const mockDb = db as unknown as { select: jest.Mock; insert: jest.Mock };
+const mockDb = db as unknown as {
+  select: jest.Mock;
+  insert: jest.Mock;
+  update: jest.Mock;
+};
 
 function buildInsertChain(returnValue: unknown[]) {
   const returning = jest.fn().mockResolvedValue(returnValue);
@@ -92,14 +97,36 @@ describe('seedDemoDataIfEmpty', () => {
     );
   });
 
-  it('does nothing when demo user already exists', async () => {
+  it('does nothing when demo user already exists with an up-to-date hash', async () => {
     const from = jest.fn().mockReturnValue({
-      where: jest.fn().mockResolvedValue([{ id: 1, email: 'demo@habittracker.app' }]),
+      where: jest.fn().mockResolvedValue([
+        { id: 1, email: 'demo@habittracker.app', passwordHash: 'mock-hash' },
+      ]),
     });
     mockDb.select.mockReturnValue({ from });
 
     await seedDemoDataIfEmpty();
 
     expect(mockDb.insert).not.toHaveBeenCalled();
+    expect(mockDb.update).not.toHaveBeenCalled();
+  });
+
+  it('refreshes the demo password hash when it has drifted', async () => {
+    const from = jest.fn().mockReturnValue({
+      where: jest.fn().mockResolvedValue([
+        { id: 1, email: 'demo@habittracker.app', passwordHash: 'stale-hash' },
+      ]),
+    });
+    mockDb.select.mockReturnValue({ from });
+
+    const where = jest.fn().mockResolvedValue(undefined);
+    const set = jest.fn().mockReturnValue({ where });
+    mockDb.update.mockReturnValue({ set });
+
+    await seedDemoDataIfEmpty();
+
+    expect(mockDb.insert).not.toHaveBeenCalled();
+    expect(mockDb.update).toHaveBeenCalledTimes(1);
+    expect(set).toHaveBeenCalledWith({ passwordHash: 'mock-hash' });
   });
 });

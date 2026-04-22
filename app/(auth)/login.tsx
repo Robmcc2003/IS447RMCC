@@ -84,12 +84,15 @@ export default function LoginScreen() {
     },
   }));
 
-  // Attempt a login. If it fails, surface the error under the form.
-  const submit = async () => {
+  // Attempt a login with the given credentials. If it fails, surface the
+  // error under the form. Accepts overrides so the demo button can pass the
+  // demo credentials directly and bypass the form state (which on iOS can be
+  // tampered with by AutoFill / Strong Password when secureTextEntry is on).
+  const submit = async (emailOverride?: string, passwordOverride?: string) => {
     setError(null);
     setSubmitting(true);
     try {
-      await login(email, password);
+      await login(emailOverride ?? email, passwordOverride ?? password);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unable to sign in.');
     } finally {
@@ -97,10 +100,13 @@ export default function LoginScreen() {
     }
   };
 
-  // Simply prefills the fields with the demo credentials — user still taps sign in.
-  const useDemo = () => {
+  // One-tap demo login. We also reflect the credentials in the form fields
+  // so the examiner can see what's being used, but the sign-in call uses the
+  // constants directly to avoid any autofill interference on the password.
+  const useDemo = async () => {
     setEmail(DEMO_EMAIL);
     setPassword(DEMO_PASSWORD);
+    await submit(DEMO_EMAIL, DEMO_PASSWORD);
   };
 
   return (
@@ -141,11 +147,16 @@ export default function LoginScreen() {
 
           <PrimaryButton
             label={submitting ? 'Signing in…' : 'Sign in'}
-            onPress={submit}
+            onPress={() => submit()}
             disabled={submitting}
           />
           <View style={styles.spacer}>
-            <PrimaryButton label="Use demo account" variant="secondary" onPress={useDemo} />
+            <PrimaryButton
+              label="Use demo account"
+              variant="secondary"
+              onPress={useDemo}
+              disabled={submitting}
+            />
           </View>
         </View>
 
