@@ -22,9 +22,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BarChart } from 'react-native-chart-kit';
 import { Category, DataContext, Habit, HabitLog, Target } from '../_layout';
 
-// Ranges on offer — "week" and "month" match the target periods, the rest
-// are rolling windows for the chart.
-const RANGE_OPTIONS: RangeKey[] = ['week', 'month', '7d', '30d', '90d'];
+// Ranges on offer — "today" gives the daily view, "week" and "month" match
+// the target periods, the rest are rolling windows for the chart.
+const RANGE_OPTIONS: RangeKey[] = ['today', 'week', 'month', '7d', '30d', '90d'];
 
 // The dashboard-y screen: big total, a chart by category, and a list of
 // targets with progress bars. Everything keys off the selected range.

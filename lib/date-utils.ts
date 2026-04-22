@@ -53,13 +53,15 @@ export function computeStreak(logDates: string[]): number {
   return streak;
 }
 
-export type RangeKey = '7d' | '30d' | '90d' | 'week' | 'month' | 'all';
+export type RangeKey = 'today' | '7d' | '30d' | '90d' | 'week' | 'month' | 'all';
 
 export function rangeStart(key: RangeKey): Date | null {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
 
   switch (key) {
+    case 'today':
+      return now;
     case '7d':
       return addDays(now, -6);
     case '30d':
@@ -78,6 +80,8 @@ export function rangeStart(key: RangeKey): Date | null {
 
 export function rangeLabel(key: RangeKey): string {
   switch (key) {
+    case 'today':
+      return 'Today';
     case '7d':
       return 'Last 7 days';
     case '30d':
