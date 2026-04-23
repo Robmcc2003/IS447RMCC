@@ -3,14 +3,14 @@ import ScreenHeader from '@/components/ui/screen-header';
 import CategoryBadge from '@/components/ui/category-badge';
 import { db } from '@/db/client';
 import { habits as habitsTable, habitLogs as habitLogsTable } from '@/db/schema';
-import { computeStreak, todayISO } from '@/lib/date-utils';
+import { computeTargetStreak, TargetPeriod, todayISO } from '@/lib/date-utils';
 import { useThemedStyles } from '@/theme/theme-context';
 import { eq } from 'drizzle-orm';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useContext } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { DataContext, Habit, HabitLog } from '../../_layout';
+import { DataContext, Habit, HabitLog, Target } from '../../_layout';
 
 // Detail screen for a single habit. Shows lifetime totals, current streak,
 // a few quick-log shortcuts and the recent logs list.
@@ -135,7 +135,7 @@ export default function HabitDetail() {
 
   if (!context) return null;
 
-  const { habits, categories, habitLogs, setHabits, setHabitLogs } = context;
+  const { habits, categories, habitLogs, targets, setHabits, setHabitLogs } = context;
   const habit = habits.find((h: Habit) => h.id === Number(id));
 
   if (!habit) return null;
@@ -146,10 +146,20 @@ export default function HabitDetail() {
     .filter((l: HabitLog) => l.habitId === habit.id)
     .sort((a, b) => b.date.localeCompare(a.date));
 
-  // Everything-ever total and the current streak.
+  // Everything-ever total. Streak is target-based: we count consecutive
+  // weeks/months where this habit's logs hit its own target. If it has no
+  // per-habit target there's nothing meaningful to count.
   const total = logs.reduce((acc, l) => acc + l.value, 0);
-  const streak = computeStreak(logs.map((l) => l.date));
   const unit = habit.unit ?? (habit.metricType === 'duration' ? 'min' : 'times');
+  const habitTarget = targets.find((t: Target) => t.habitId === habit.id);
+  const streakUnit = habitTarget
+    ? habitTarget.period === 'weekly'
+      ? 'week'
+      : 'month'
+    : null;
+  const streak = habitTarget
+    ? computeTargetStreak(logs, habitTarget.targetValue, habitTarget.period as TargetPeriod)
+    : 0;
 
   // Small helper for the +X buttons — logs today's date with the given amount.
   const quickLog = async (amount: number) => {
@@ -201,9 +211,17 @@ export default function HabitDetail() {
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Current streak</Text>
-            <Text style={styles.statValue}>
-              {streak} <Text style={styles.statUnit}>day{streak === 1 ? '' : 's'}</Text>
-            </Text>
+            {streakUnit ? (
+              <Text style={styles.statValue}>
+                {streak}{' '}
+                <Text style={styles.statUnit}>
+                  {streakUnit}
+                  {streak === 1 ? '' : 's'}
+                </Text>
+              </Text>
+            ) : (
+              <Text style={styles.statUnit}>No target set</Text>
+            )}
           </View>
         </View>
 

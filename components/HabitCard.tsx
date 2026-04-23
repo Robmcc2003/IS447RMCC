@@ -15,7 +15,10 @@ export type HabitCardModel = {
   categoryColor: string;
   rangeTotal: number;
   rangeLabel: string;
+  // Streaks are measured against the habit's target. `streakUnit` is null
+  // when the habit has no per-habit target — nothing to be consecutive about.
   streak: number;
+  streakUnit: 'week' | 'month' | null;
 };
 
 type Props = {
@@ -105,8 +108,13 @@ export default function HabitCard({ habit, onQuickLog }: Props) {
 
   // Pick a sensible unit label — "min" for durations, "times" otherwise.
   const unit = habit.unit ?? (habit.metricType === 'duration' ? 'min' : 'times');
+  // Phrase the streak depending on the target period, or mention that there
+  // isn't a target yet so the user knows why the number is missing.
+  const streakText = habit.streakUnit
+    ? `${habit.streak} ${habit.streakUnit}${habit.streak === 1 ? '' : 's'} streak`
+    : 'No target set';
   // Full accessibility summary so screen readers get the whole context at once.
-  const summary = `${habit.name}, category ${habit.categoryName}, ${habit.rangeTotal} ${unit} in ${habit.rangeLabel}, streak ${habit.streak}`;
+  const summary = `${habit.name}, category ${habit.categoryName}, ${habit.rangeTotal} ${unit} in ${habit.rangeLabel}, ${streakText}`;
 
   return (
     <Pressable
@@ -142,8 +150,8 @@ export default function HabitCard({ habit, onQuickLog }: Props) {
             {Math.round(habit.rangeTotal)} {unit}
           </Text>
           <Text style={styles.metaDivider}>•</Text>
-          <Text style={styles.streak}>
-            {habit.streak} day{habit.streak === 1 ? '' : 's'} streak
+          <Text style={habit.streakUnit ? styles.streak : styles.meta}>
+            {streakText}
           </Text>
         </View>
       </View>

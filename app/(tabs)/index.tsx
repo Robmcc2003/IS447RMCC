@@ -5,10 +5,11 @@ import ScreenHeader from '@/components/ui/screen-header';
 import { db } from '@/db/client';
 import { habitLogs as habitLogsTable } from '@/db/schema';
 import {
-  computeStreak,
+  computeTargetStreak,
   RangeKey,
   rangeLabel,
   rangeStart,
+  TargetPeriod,
   todayISO,
 } from '@/lib/date-utils';
 import { useTheme, useThemedStyles } from '@/theme/theme-context';
@@ -16,7 +17,7 @@ import { useRouter } from 'expo-router';
 import { useContext, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Category, DataContext, Habit, HabitLog } from '../_layout';
+import { Category, DataContext, Habit, HabitLog, Target } from '../_layout';
 
 // Date windows the user can flick between on the habits list.
 const RANGE_OPTIONS: RangeKey[] = ['7d', '30d', '90d', 'all'];
@@ -120,15 +121,28 @@ export default function HabitsScreen() {
   }, [scopedLogs]);
 
   // Streaks always use the full log history — a streak shouldn't shrink just
-  // because you flipped the range dropdown.
+  // because you flipped the range dropdown. Streak is target-based: we look
+  // for the habit's own target and count consecutive weeks/months where its
+  // logs met the target value. No target ⇒ no streak to display.
   const streaksByHabit = useMemo(() => {
-    const map = new Map<number, number>();
+    const map = new Map<number, { streak: number; unit: 'week' | 'month' | null }>();
     if (!context) return map;
     for (const habit of context.habits) {
-      const dates = context.habitLogs
-        .filter((l: HabitLog) => l.habitId === habit.id)
-        .map((l) => l.date);
-      map.set(habit.id, computeStreak(dates));
+      const target = context.targets.find((t: Target) => t.habitId === habit.id);
+      if (!target) {
+        map.set(habit.id, { streak: 0, unit: null });
+        continue;
+      }
+      const habitLogs = context.habitLogs.filter((l: HabitLog) => l.habitId === habit.id);
+      const streak = computeTargetStreak(
+        habitLogs,
+        target.targetValue,
+        target.period as TargetPeriod
+      );
+      map.set(habit.id, {
+        streak,
+        unit: target.period === 'weekly' ? 'week' : 'month',
+      });
     }
     return map;
   }, [context]);
@@ -153,6 +167,7 @@ export default function HabitsScreen() {
 
   const cards: HabitCardModel[] = filtered.map((habit) => {
     const category = categories.find((c: Category) => c.id === habit.categoryId);
+    const streakInfo = streaksByHabit.get(habit.id) ?? { streak: 0, unit: null };
     return {
       id: habit.id,
       name: habit.name,
@@ -163,7 +178,8 @@ export default function HabitsScreen() {
       categoryColor: category?.color ?? '#9CA3AF',
       rangeTotal: totalsByHabit.get(habit.id) ?? 0,
       rangeLabel: rangeLabel(range).toLowerCase(),
-      streak: streaksByHabit.get(habit.id) ?? 0,
+      streak: streakInfo.streak,
+      streakUnit: streakInfo.unit,
     };
   });
 
