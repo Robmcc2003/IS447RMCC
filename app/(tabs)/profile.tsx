@@ -1,8 +1,9 @@
 import PrimaryButton from '@/components/ui/primary-button';
 import ScreenHeader from '@/components/ui/screen-header';
 import { useAuth } from '@/auth/auth-context';
+import { exportHabitLogsCsv } from '@/lib/export-csv';
 import { ThemeMode, useTheme, useThemedStyles } from '@/theme/theme-context';
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DataContext } from '../_layout';
@@ -20,6 +21,9 @@ export default function ProfileScreen() {
   const { user, logout, deleteAccount } = useAuth();
   const { mode, resolvedScheme, setMode } = useTheme();
   const context = useContext(DataContext);
+  // Disable the export button while a share sheet is in flight so we don't
+  // kick off multiple exports at once if the user taps twice.
+  const [exporting, setExporting] = useState(false);
   // Styles are built from the current palette so they flip with the theme.
   const styles = useThemedStyles((c) => ({
     safeArea: {
@@ -175,6 +179,27 @@ export default function ProfileScreen() {
   // Helpful hint for "system" mode so the user knows which way it's resolved right now.
   const systemLabel = mode === 'system' ? ` (now ${resolvedScheme})` : '';
 
+  // Build a CSV of every habit log and open the native share sheet so the
+  // user can email / save / AirDrop it. If there are no logs we short-
+  // circuit with a friendly message rather than handing them an empty file.
+  const exportCsv = async () => {
+    if (habitLogs.length === 0) {
+      Alert.alert('Nothing to export', 'Log a few habits first and then try again.');
+      return;
+    }
+    setExporting(true);
+    try {
+      await exportHabitLogsCsv(habits, categories, habitLogs);
+    } catch (e) {
+      Alert.alert(
+        'Export failed',
+        e instanceof Error ? e.message : 'Unable to export your data right now.'
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
@@ -238,6 +263,21 @@ export default function ProfileScreen() {
           <Text style={styles.themeHint}>
             "System" follows your device's light/dark setting.
           </Text>
+        </View>
+
+        {/* Data export — writes every habit log to a CSV and opens the
+            system share sheet so it can go to Files, Mail, etc. */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Data</Text>
+          <Text style={styles.sectionSubtitle}>
+            Download your habit logs as a CSV file you can open in Excel or Numbers.
+          </Text>
+          <PrimaryButton
+            label={exporting ? 'Preparing…' : 'Export logs (CSV)'}
+            variant="secondary"
+            onPress={exportCsv}
+            disabled={exporting}
+          />
         </View>
 
         {/* Sign-out, plus the destructive delete button below it. */}
