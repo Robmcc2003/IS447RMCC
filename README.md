@@ -1,7 +1,12 @@
-# HabitLab — IS4447 Project
+# HabitLab — IS4447 Project    https://github.com/Robmcc2003/IS447RMCC
 
 A local-first habit tracker built with **React Native (Expo)**, **Drizzle ORM**, and **SQLite**. Users can log activity, group habits into categories, set weekly/monthly targets, and view aggregated insights with a bar chart.
 
+
+### Expo Go
+- https://expo.dev/preview/update?message=Initial+publish&updateRuntimeVersion=1.0.0&createdAt=2026-04-23T18%3A35%3A44.521Z&slug=exp&projectId=7c1c04be-cbbd-42eb-b12c-81b1d2d91a3f&group=2fc6a91a-4b1c-4d21-afbe-52f0164319d3
+
+-exp://u.expo.dev/7c1c04be-cbbd-42eb-b12c-81b1d2d91a3f/group/2fc6a91a-4b1c-4d21-afbe-52f0164319d3
 ## Running the app
 
 ```bash
@@ -66,29 +71,12 @@ jest.config.js        jest-expo preset + @/ path mapping
 | `habit_logs` | `habit_id`, `user_id`, `date`, `value` |
 | `targets` | `user_id`, `habit_id` / `category_id`, `period`, `target_value` |
 
-DDL is created on first app launch (`db/client.ts`). Seed data is added by `seedDemoDataIfEmpty()` in `db/seed.ts` and is idempotent.
-
-## Implemented features
-
-- **Records (CRUD)** for habits with per-date logs, quick-log buttons, and per-habit targets.
-- **Categories** with create / edit / delete and colour swatches; each habit must reference a category.
-- **Targets** (weekly / monthly, per habit or per category) with progress bars.
-- **Insights** with total-tracked summary and a bar chart by category, plus target progress.
-- **Search & filter** habits by text and category.
-- **Persistence** via local SQLite using Drizzle ORM; seed script populates all tables.
-- **Accessibility**: labels and roles on buttons, inputs, cards.
-- **Auth**: local-only register, login, logout, delete account. Passwords hashed with SHA-256 + salt (`expo-crypto`). Session persisted in `AsyncStorage`.
-
 ## Testing
-
 The sample-project style is followed: tests live in `tests/` and mock the `db/client` module directly.
 
 ```bash
 npm test
 ```
 
-Suites:
-
-- `tests/seed.test.ts` — verifies `seedDemoDataIfEmpty` inserts into users, categories, habits, habit_logs, and targets, and is idempotent.
-- `tests/FormField.test.tsx` — renders the label/placeholder, fires `onChangeText`, and renders error messages.
-- `tests/HabitsList.test.tsx` — integration: supplies seeded data via `DataContext` and asserts habit names render.
+### AI Used
+- Chatgpt for the monotnous styling https://chatgpt.com/share/69ea6913-c6a4-83eb-be23-63b8187df369
